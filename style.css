@@ -1,0 +1,62 @@
+@import url("https://fonts.googleapis.com/css2?family=Lato:wght@100;300;400&display=swap");
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  margin: 0;
+  font-family: "Lato";
+  font-weight: 300;
+  font-size: 24px;
+  background: #2b2b2b;
+  color: #fff;
+}
+
+h2 {
+  display: block;
+  color: white;
+  font-weight: 100;
+  text-align: center;
+}
+
+.intro-page__input-div {
+  display: flex;
+  justify-content: space-evenly;
+  padding-top: 1.5rem;
+}
+
+#grid-size,
+#enter-game {
+  font-size: 1.5rem;
+}
+.mosaic-loader {
+  --cell-spacing: 1px;
+  --border-width: 1px;
+  display: flex;
+  flex-wrap: wrap;
+}
+.mosaic-loader > .cell {
+  color: white;
+  flex: 0 0 var(--cell-size);
+  margin: var(--cell-spacing);
+  background-color: transparent;
+  box-sizing: border-box;
+  animation: var(--animation-time) ripple ease infinite;
+}
+
+@keyframes ripple {
+  0% {
+    background-color: transparent;
+  }
+  30% {
+    background-color: var(--cell-color);
+  }
+  60% {
+    background-color: transparent;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
