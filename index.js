@@ -2,6 +2,7 @@ const INTRO_PAGE = 'intro-page';
 const MEMORY_GAME = 'memory-game';
 const MOSAIC_LOADER = 'mosaic-loader';
 const PICSUM_URL = 'https://picsum.photos/150/150';
+const TOAST = 'toast-message';
 
 let store = {
     gridToggled: true
@@ -10,8 +11,11 @@ let store = {
 loadCustomElement(INTRO_PAGE);
 
 // Used to load any defined custom html element. Takes two params name, container to query upon
-function loadCustomElement(name, container = document.body) {
+function loadCustomElement(name, attributes, container = document.body) {
     const game = document.createElement(name);
+    attributes?.forEach(attribute => {
+        game.setAttribute(attribute.key, attribute.value);
+    })
     container.appendChild(game);
 }
 
@@ -121,45 +125,50 @@ function createImageGrid() {
                 setTimeout(() => {
                     cardContainer.classList.toggle('is-flipped');
                     cardContainer.onclick = (event) => {
-                        let selectedMatchIndex = parseInt(event.currentTarget.getAttribute("data-match-index"));
-                        let selectedShuffledIndex = parseInt(event.currentTarget.getAttribute("data-shuffled-index"));
-                        if (!oldImageIndex) {
-                            oldImageIndex = selectedShuffledIndex;
-                        }
-                        if (flipCount < 2) {
-                            if (selectionOne) {
-                                selectionTwo = selectedMatchIndex;
+                        if (cardContainer.classList.contains('is-flipped')) {
+                            let selectedMatchIndex = parseInt(event.currentTarget.getAttribute("data-match-index"));
+                            let selectedShuffledIndex = parseInt(event.currentTarget.getAttribute("data-shuffled-index"));
+                            if (!oldImageIndex) {
+                                oldImageIndex = selectedShuffledIndex;
+                            }
+                            if (flipCount < 2) {
+                                if (selectionOne) {
+                                    selectionTwo = selectedMatchIndex;
+                                } else {
+                                    selectionOne = selectedMatchIndex;
+                                }
+                                flipCount++;
+                                cardContainer.classList.toggle('is-flipped');
+                                if (selectionOne === selectionTwo && flipCount === 2) {
+                                    dontFlipList.push(selectedShuffledIndex);
+                                    dontFlipList.push(oldImageIndex);
+                                    flipCount = selectionTwo = selectionOne = 0;
+                                    oldImageIndex = null;
+                                } else if (flipCount === 2) {
+                                    setTimeout(() => {
+                                        toggleSelectedCards();
+                                    }, 1000)
+                                }
                             } else {
-                                selectionOne = selectedMatchIndex;
+                                toggleSelectedCards();
                             }
-                            flipCount++;
-                            cardContainer.classList.toggle('is-flipped');
-                            if (selectionOne === selectionTwo && flipCount === 2) {
-                                dontFlipList.push(selectedShuffledIndex);
-                                dontFlipList.push(oldImageIndex);
-                                flipCount = selectionTwo = selectionOne = 0;
-                                oldImageIndex = null;
-                            } else if (flipCount === 2) {
-                                setTimeout(() => {
-                                    toggleSelectedCards();
-                                }, 1000)
+                            if (dontFlipList.length === gridSize * gridSize) {
+                                loadCustomElement(TOAST, [{
+                                    key: 'message',
+                                    value: 'Game Over'
+                                }])
                             }
-                        } else {
-                            toggleSelectedCards();
-                        }
-                        if (dontFlipList.length === gridSize * gridSize) {
-                            console.log('Game over')
-                        }
-                        console.log(dontFlipList.length)
+                            console.log(dontFlipList.length)
 
-                        function toggleSelectedCards() {
-                            selectionTwo = selectionOne = 0;
-                            oldImageIndex = null;
-                            flipCount = 0;
-                            let imageContainer = document.querySelectorAll('.card');
-                            for (let i = 0; i < imageContainer.length; i++) {
-                                if (!dontFlipList.includes(parseInt(imageContainer[i].getAttribute("data-match-index")))) {
-                                    imageContainer[i].classList.add('is-flipped');
+                            function toggleSelectedCards() {
+                                selectionTwo = selectionOne = 0;
+                                oldImageIndex = null;
+                                flipCount = 0;
+                                let imageContainer = document.querySelectorAll('.card');
+                                for (let i = 0; i < imageContainer.length; i++) {
+                                    if (!dontFlipList.includes(parseInt(imageContainer[i].getAttribute("data-match-index")))) {
+                                        imageContainer[i].classList.add('is-flipped');
+                                    }
                                 }
                             }
                         }
@@ -181,6 +190,22 @@ function createImageGrid() {
             removeCustomElement(MOSAIC_LOADER);
         })
     })
+}
+
+class ToastMessage extends HTMLElement {
+    constructor() {
+        super();
+    };
+
+    connectedCallback() {
+        let flipButton = document.getElementsByClassName('flip-button')[0];
+        flipButton?.remove()
+        let toast = document.createElement('div');
+        toast.innerHTML = this.getAttribute('message');
+        toast.classList.add('toast-success');
+        const memoryGame = document.getElementsByTagName(MEMORY_GAME)[0];
+        document.body.insertBefore(toast, memoryGame);
+    }
 }
 
 class MosaicLoader extends HTMLElement {
@@ -270,3 +295,4 @@ class IntroPage extends HTMLElement {
 customElements.define(MEMORY_GAME, MemoryGame);
 customElements.define(INTRO_PAGE, IntroPage);
 customElements.define(MOSAIC_LOADER, MosaicLoader);
+customElements.define(TOAST, ToastMessage);
