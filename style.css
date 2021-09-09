@@ -29,6 +29,7 @@ h2 {
 #enter-game {
   font-size: 1.5rem;
 }
+
 .mosaic-loader {
   --cell-spacing: 1px;
   --border-width: 1px;
@@ -83,10 +84,7 @@ h2 {
   font-size: 40px;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-}
-
-.card__face--front {
-  background: red;
+  border: 1px solid #fff;
 }
 
 .card__face--back {
@@ -96,15 +94,50 @@ h2 {
 }
 
 .flip-button {
-  background: #2b2b2b;
-  color: #fff;
-  font-size: 1.5rem;
-  cursor: pointer;
   margin: 1rem;
 }
 
 .toast-success {
-  background: forestgreen;
+  background: #fff;
   padding: 1rem 2rem;
   margin: 1rem;
+  color: #2b2b2b;
+  border-radius: 20px;
+}
+
+.scoring-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 40%;
+  margin: 2rem;
+}
+
+.score {
+  color: yellowgreen;
+}
+
+.score-attempt {
+  color: rgb(221, 83, 83);
+}
+
+input {
+  color: white;
+  background: #353333;
+  border: 1px solid gray;
+}
+
+button {
+  color: white;
+  background: #353333;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 8px;
+  border: none;
+  font-size: 1.2rem;
+  box-shadow: 0px 0px 16px 6px rgb(255 255 255 / 20%);
+}
+
+.image-container {
+  box-shadow: 0px 0px 16px 6px rgb(255 255 255 / 20%);
 }

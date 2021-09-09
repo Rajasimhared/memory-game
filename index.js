@@ -4,11 +4,49 @@ const MOSAIC_LOADER = 'mosaic-loader';
 const PICSUM_URL = 'https://picsum.photos/150/150';
 const TOAST = 'toast-message';
 
-let store = {
-    gridToggled: true
+const store = {
+    gridToggled: true,
+    gridBoxSize: null,
+    userScore: 0,
+    userAttempts: 0,
+    gridSize: 0
 };
 
+// Create the proxy and a data object:
+let proxy = new Proxy(store, {
+    // Observe:
+    set: function (store, prop, val) {
+        store[prop] = val;
+        console.log(prop, val);
+        // updateScore();
+        // updateAttempts();
+    }
+});
+
 loadCustomElement(INTRO_PAGE);
+
+function updateScoring() {
+    const score = document.body.querySelector('.score');
+    const scoreAttempts = document.body.querySelector('.score-attempt');
+    if (scoreAttempts) {
+        scoreAttempts.innerHTML = `${store.userAttempts}`;
+    }
+    if (score) {
+        score.innerHTML = `${store.userScore}`;
+
+    }
+    if (!scoreAttempts || !score) {
+        let scoringContainer = document.createElement('div');
+        scoringContainer.classList.add('scoring-container');
+        scoringContainer.innerHTML = `
+            <div>Score: <span class="score">${store.userScore}</span></div>
+            <button onclick="window.location.reload()">Replay &#x21BA;</button>
+            <button onclick="flipCards()" class="flip-button">Flip All Cards</button>
+            <div>Attempts: <span class="score-attempt">${store.userAttempts}</span></div>
+            `;
+        document.body.appendChild(scoringContainer);
+    }
+}
 
 // Used to load any defined custom html element. Takes two params name, container to query upon
 function loadCustomElement(name, attributes, container = document.body) {
@@ -54,10 +92,11 @@ function flipCards(time, excludeFlip = []) {
 
         gridToggled ? card.classList.remove('is-flipped') : card.classList.add('is-flipped');
     }
-    updateStore({
-        key: 'gridToggled',
-        value: !gridToggled
-    });
+    // updateStore({
+    //     key: 'gridToggled',
+    //     value: !gridToggled
+    // });
+    store.gridToggled = !gridToggled;
 }
 
 function randomNumbers() {
@@ -125,6 +164,10 @@ function createImageGrid() {
                 setTimeout(() => {
                     cardContainer.classList.toggle('is-flipped');
                     cardContainer.onclick = (event) => {
+                        const {
+                            userScore,
+                            userAttempts
+                        } = store;
                         if (cardContainer.classList.contains('is-flipped')) {
                             let selectedMatchIndex = parseInt(event.currentTarget.getAttribute("data-match-index"));
                             let selectedShuffledIndex = parseInt(event.currentTarget.getAttribute("data-shuffled-index"));
@@ -144,21 +187,37 @@ function createImageGrid() {
                                     dontFlipList.push(oldImageIndex);
                                     flipCount = selectionTwo = selectionOne = 0;
                                     oldImageIndex = null;
+                                    store.userScore = userScore + 1;
+                                    store.userAttempts = userAttempts + 1;
+                                    updateScoring();
+                                    // proxy.userScore = userScore + 1;
+                                    // proxy.userAttempts = userAttempts + 1;
+                                    // updateStore({
+                                    //     key: 'userScore',
+                                    //     value: userScore + 1
+                                    // });
                                 } else if (flipCount === 2) {
+                                    store.userAttempts = userAttempts + 1;
+                                    updateScoring();
                                     setTimeout(() => {
                                         toggleSelectedCards();
-                                    }, 1000)
+                                    }, 1000);
+
                                 }
+                                // updateStore({
+                                //     key: 'userAttempts',
+                                //     value: userAttempts + 1
+                                // });
+                                // proxy.userAttempts = userAttempts + 1;
                             } else {
                                 toggleSelectedCards();
                             }
                             if (dontFlipList.length === gridSize * gridSize) {
                                 loadCustomElement(TOAST, [{
                                     key: 'message',
-                                    value: 'Game Over'
+                                    value: 'Congrats! You made it...'
                                 }])
                             }
-                            console.log(dontFlipList.length)
 
                             function toggleSelectedCards() {
                                 selectionTwo = selectionOne = 0;
@@ -205,6 +264,64 @@ class ToastMessage extends HTMLElement {
         toast.classList.add('toast-success');
         const memoryGame = document.getElementsByTagName(MEMORY_GAME)[0];
         document.body.insertBefore(toast, memoryGame);
+
+        var end = Date.now() + (5 * 1000);
+        var colors = ['#fff', '#ff0000', '#f3f3f3', '#008000'];
+        (function frame() {
+            confetti({
+                particleCount: 4,
+                angle: -90,
+                spread: 180,
+                origin: {
+                    x: 0.5,
+                    y: -0.2
+                },
+                colors: colors
+            });
+            confetti({
+                particleCount: 4,
+                angle: -45,
+                spread: 85,
+                origin: {
+                    x: 0,
+                    y: 0
+                },
+                colors: colors
+            });
+            confetti({
+                particleCount: 4,
+                angle: -135,
+                spread: 85,
+                origin: {
+                    x: 1,
+                    y: 0
+                },
+                colors: colors
+            });
+            confetti({
+                particleCount: 4,
+                angle: 45,
+                spread: 85,
+                origin: {
+                    x: 0,
+                    y: 1
+                },
+                colors: colors
+            });
+            confetti({
+                particleCount: 4,
+                angle: 135,
+                spread: 85,
+                origin: {
+                    x: 1,
+                    y: 1
+                },
+                colors: colors
+            });
+            if (Date.now() < end) {
+                requestAnimationFrame(frame);
+            }
+        }());
     }
 }
 
@@ -250,11 +367,7 @@ class MemoryGame extends HTMLElement {
     };
     connectedCallback() {
         createImageGrid();
-        let flipButton = document.createElement('button')
-        flipButton.className = 'flip-button'
-        flipButton.textContent = 'Flip Cards';
-        flipButton.onclick = () => flipCards();
-        document.body.appendChild(flipButton);
+        updateScoring();
     }
 }
 
@@ -278,15 +391,20 @@ class IntroPage extends HTMLElement {
         const gridSizeElement = document.querySelector('#grid-size');
 
         enterGame.onclick = function () {
-            updateStore({
-                key: 'gridSize',
-                value: parseInt(gridSizeElement.value) % 2 === 0 ? parseInt(gridSizeElement.value) : parseInt(gridSizeElement.value) + 1
-            });
+            // updateStore({
+            //     key: 'gridSize',
+            //     value: parseInt(gridSizeElement.value) % 2 === 0 ? parseInt(gridSizeElement.value) : parseInt(gridSizeElement.value) + 1
+            // });
+            store.gridSize = parseInt(gridSizeElement.value) % 2 === 0 ? parseInt(gridSizeElement.value) : parseInt(gridSizeElement.value) + 1;
             removeCustomElement(INTRO_PAGE);
             loadCustomElement(MOSAIC_LOADER);
             loadCustomElement(MEMORY_GAME);
         }
     };
+
+    connectedCallback() {
+
+    }
 }
 
 
