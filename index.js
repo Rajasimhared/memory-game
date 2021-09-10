@@ -1,37 +1,21 @@
 const INTRO_PAGE = 'intro-page';
 const MEMORY_GAME = 'memory-game';
 const MOSAIC_LOADER = 'mosaic-loader';
-const PICSUM_URL = 'https://picsum.photos/150/150';
+const PICSUM_URL = 'https://picsum.photos';
 const TOAST = 'toast-message';
+
+loadCustomElement(INTRO_PAGE);
 
 const store = {
     gridToggled: true,
     gridBoxSize: null,
     userScore: 0,
     userAttempts: 0,
-    gridSize: 0
+    gridSize: 0,
+    deviceWidth: 0,
+    cellWidth: 0,
+    excludeFlip: []
 };
-
-loadCustomElement(INTRO_PAGE);
-
-function updateScoring() {
-    const score = document.body.querySelector('.score');
-    const scoreAttempts = document.body.querySelector('.score-attempt');
-    if (!scoreAttempts || !score) {
-        let scoringContainer = document.createElement('div');
-        scoringContainer.classList.add('scoring-container');
-        scoringContainer.innerHTML = `
-            <div>Score: <span class="score">${store.userScore}</span></div>
-            <button onclick="window.location.reload()">Replay &#x21BA;</button>
-            <button onclick="flipCards()" class="flip-button">Flip All Cards</button>
-            <div>Attempts: <span class="score-attempt">${store.userAttempts}</span></div>
-            `;
-        document.body.appendChild(scoringContainer);
-    } else {
-        scoreAttempts.innerHTML = `${store.userAttempts}`;
-        score.innerHTML = `${store.userScore}`;
-    }
-}
 
 // Used to load any defined custom html element. Takes two params name, container to query upon
 function loadCustomElement(name, attributes, container = document.body) {
@@ -66,17 +50,6 @@ function updateStore({
         [key]: value,
     }
     store = newStore;
-}
-
-function flipCards(time, excludeFlip = []) {
-    const {
-        gridToggled
-    } = store;
-    let cards = document.querySelectorAll('.card');
-    for (let card of cards) {
-        gridToggled ? card.classList.remove('is-flipped') : card.classList.add('is-flipped');
-    }
-    store.gridToggled = !gridToggled;
 }
 
 function randomNumbersInRange(start, end) {
@@ -116,46 +89,46 @@ class ToastMessage extends HTMLElement {
                 },
                 colors: colors
             });
-            confetti({
-                particleCount: 4,
-                angle: -45,
-                spread: 85,
-                origin: {
-                    x: 0,
-                    y: 0
-                },
-                colors: colors
-            });
-            confetti({
-                particleCount: 4,
-                angle: -135,
-                spread: 85,
-                origin: {
-                    x: 1,
-                    y: 0
-                },
-                colors: colors
-            });
-            confetti({
-                particleCount: 4,
-                angle: 45,
-                spread: 85,
-                origin: {
-                    x: 0,
-                    y: 1
-                },
-                colors: colors
-            });
-            confetti({
-                particleCount: 4,
-                angle: 135,
-                spread: 85,
-                origin: {
-                    x: 1,
-                    y: 1
-                },
-                colors: colors
-            });
+            // confetti({
+            //     particleCount: 4,
+            //     angle: -45,
+            //     spread: 85,
+            //     origin: {
+            //         x: 0,
+            //         y: 0
+            //     },
+            //     colors: colors
+            // });
+            // confetti({
+            //     particleCount: 4,
+            //     angle: -135,
+            //     spread: 85,
+            //     origin: {
+            //         x: 1,
+            //         y: 0
+            //     },
+            //     colors: colors
+            // });
+            // confetti({
+            //     particleCount: 4,
+            //     angle: 45,
+            //     spread: 85,
+            //     origin: {
+            //         x: 0,
+            //         y: 1
+            //     },
+            //     colors: colors
+            // });
+            // confetti({
+            //     particleCount: 4,
+            //     angle: 135,
+            //     spread: 85,
+            //     origin: {
+            //         x: 1,
+            //         y: 1
+            //     },
+            //     colors: colors
+            // });
             if (Date.now() < end) {
                 requestAnimationFrame(frame);
             }
@@ -170,12 +143,12 @@ class MosaicLoader extends HTMLElement {
 
     connectedCallback() {
         let {
-            gridSize
+            gridSize,
+            cellWidth
         } = store;
-
         let loader = document.createElement('div');
         loader.className = MOSAIC_LOADER;
-        let cellSize = 150,
+        let cellSize = cellWidth,
             cellSpacing = 1;
         let totalSize = gridSize * (cellSize + (2 * cellSpacing));
         loader.style.width = totalSize + 'px';
@@ -204,8 +177,29 @@ class MemoryGame extends HTMLElement {
         super();
     };
     connectedCallback() {
+        this.updateScoring();
         this.createImageGrid();
-        updateScoring();
+    }
+
+    updateScoring() {
+        const score = document.body.querySelector('.score');
+        const scoreAttempts = document.body.querySelector('.score-attempt');
+        if (!scoreAttempts || !score) {
+            let scoringContainer = document.createElement('div');
+            scoringContainer.classList.add('scoring-container');
+            scoringContainer.innerHTML = `
+            <div>Score: <span class="score">${store.userScore}</span></div>
+             <div>Attempts: <span class="score-attempt">${store.userAttempts}</span></div>
+             <div>
+            <button onclick="window.location.reload()">Replay &#x21BA;</button>
+            <button class="flip-button">Flip All Cards</button>
+            </div>
+            `;
+            this.appendChild(scoringContainer);
+        } else {
+            scoreAttempts.innerHTML = `${store.userAttempts}`;
+            score.innerHTML = `${store.userScore}`;
+        }
     }
 
     async fetchImages(images) {
@@ -225,19 +219,17 @@ class MemoryGame extends HTMLElement {
 
     async createImageGrid() {
         const {
-            gridSize
+            gridSize,
+            cellWidth
         } = store;
-
         // Prepare images array for promise.all
         let images = [];
         for (let i = 0; i < gridSize * gridSize / 2; i++) {
-            images.push(fetch(PICSUM_URL));
+            images.push(fetch(`${PICSUM_URL}/${cellWidth}/${cellWidth}`));
         }
 
         // Fetch images with blobs
         let imagesData = await this.fetchImages(images);
-
-        console.log(imagesData);
 
         let shuffledArray = randomNumbersInRange(1, gridSize * gridSize);
 
@@ -250,11 +242,9 @@ class MemoryGame extends HTMLElement {
             }
             gridData.push(val);
         })
-        console.log(gridData);
-
         let gridDimensions = '';
         for (let i = 0; i < gridSize; i++) {
-            gridDimensions += '150px ';
+            gridDimensions += `${cellWidth}px `;
         }
 
         const imageContainer = document.createElement('div');
@@ -291,11 +281,11 @@ class MemoryGame extends HTMLElement {
                         flipCount = selectionTwo = selectionOne = 0;
                         oldImageIndex = null;
                         store.userScore = userScore + 1;
-                        store.userAttempts = userAttempts + 1;
-                        updateScoring();
+                        this.updateScoring();
+                        store.excludeFlip = dontFlipList;
                     } else if (flipCount === 2) {
                         store.userAttempts = userAttempts + 1;
-                        updateScoring();
+                        this.updateScoring();
                         setTimeout(() => {
                             toggleSelectedCards();
                         }, 1000);
@@ -310,19 +300,26 @@ class MemoryGame extends HTMLElement {
                         value: 'Congrats! You made it...'
                     }])
                 }
+            }
+        }
 
-                function toggleSelectedCards() {
-                    selectionTwo = selectionOne = 0;
-                    oldImageIndex = null;
-                    flipCount = 0;
-                    let imageContainer = document.querySelectorAll('.card');
-                    for (let i = 0; i < imageContainer.length; i++) {
-                        if (!dontFlipList.includes(parseInt(imageContainer[i].getAttribute("data-shuffled-index")))) {
-                            imageContainer[i].classList.add('is-flipped');
-                        }
+        function toggleSelectedCards(flipAll = false) {
+            selectionTwo = selectionOne = 0;
+            oldImageIndex = null;
+            flipCount = 0;
+            let imageContainer = document.querySelectorAll('.card');
+            if (flipAll) {
+                for (let card of imageContainer) {
+                    card.classList.remove('is-flipped');
+                }
+            } else {
+                for (let i = 0; i < imageContainer.length; i++) {
+                    if (!dontFlipList.includes(parseInt(imageContainer[i].getAttribute("data-shuffled-index")))) {
+                        imageContainer[i].classList.add('is-flipped');
                     }
                 }
             }
+
         }
 
         gridData.map(imageBlob => {
@@ -348,7 +345,16 @@ class MemoryGame extends HTMLElement {
             cardContainer.appendChild(image);
             cardContainer.appendChild(backFlip);
             imageContainer.appendChild(cardContainer);
-        })
+        });
+
+        let flip = document.querySelector('.flip-button');
+        flip.onclick = () => {
+            toggleSelectedCards(true);
+            setTimeout(() => {
+                toggleSelectedCards();
+            }, 2000)
+        }
+
         this.appendChild(imageContainer);
         removeCustomElement(MOSAIC_LOADER);
     }
@@ -367,6 +373,7 @@ class IntroPage extends HTMLElement {
          `;
         // let intro = document.createDocumentFragment();
         let intro = document.createElement('div');
+        intro.classList.add('intro-page');
         intro.innerHTML = introHTML;
         this.appendChild(intro);
 
@@ -374,10 +381,13 @@ class IntroPage extends HTMLElement {
         const gridSizeElement = document.querySelector('#grid-size');
 
         enterGame.onclick = function () {
+            store.deviceWidth = window.innerWidth - 36;
             store.gridSize = parseInt(gridSizeElement.value) % 2 === 0 ? parseInt(gridSizeElement.value) : parseInt(gridSizeElement.value) + 1;
+
+            store.cellWidth = Math.floor(store.deviceWidth / store.gridSize) > 150 ? 150 : Math.floor(store.deviceWidth / store.gridSize);
             removeCustomElement(INTRO_PAGE);
-            loadCustomElement(MOSAIC_LOADER);
             loadCustomElement(MEMORY_GAME);
+            loadCustomElement(MOSAIC_LOADER);
         }
     };
 }

@@ -17,6 +17,11 @@ h2 {
   color: white;
   font-weight: 100;
   text-align: center;
+  margin: 0;
+}
+
+.intro-page {
+  margin: 1em;
 }
 
 .intro-page__input-div {
@@ -28,6 +33,7 @@ h2 {
 #grid-size,
 #enter-game {
   font-size: 1.5rem;
+  margin: 1rem 0;
 }
 
 .mosaic-loader {
@@ -93,10 +99,6 @@ h2 {
   border: 1px solid black;
 }
 
-.flip-button {
-  margin: 1rem;
-}
-
 .toast-success {
   background: #fff;
   padding: 1rem 2rem;
@@ -109,8 +111,7 @@ h2 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 40%;
-  margin: 2rem;
+  margin: 2rem 0;
 }
 
 .score {
@@ -136,8 +137,19 @@ button {
   border: none;
   font-size: 1.2rem;
   box-shadow: 0px 0px 16px 6px rgb(255 255 255 / 20%);
+  margin: 1rem 0;
 }
 
 .image-container {
   box-shadow: 0px 0px 16px 6px rgb(255 255 255 / 20%);
+  justify-content: center;
+}
+
+@media only screen and (min-device-width: 320px) and (max-device-width: 1024px) and (-webkit-min-device-pixel-ratio: 2) {
+  .intro-page__input-div {
+    flex-direction: column;
+  }
+  .scoring-container {
+    flex-direction: column;
+  }
 }
