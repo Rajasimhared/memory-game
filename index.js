@@ -12,29 +12,11 @@ const store = {
     gridSize: 0
 };
 
-// Create the proxy and a data object:
-let proxy = new Proxy(store, {
-    // Observe:
-    set: function (store, prop, val) {
-        store[prop] = val;
-        console.log(prop, val);
-        // updateScore();
-        // updateAttempts();
-    }
-});
-
 loadCustomElement(INTRO_PAGE);
 
 function updateScoring() {
     const score = document.body.querySelector('.score');
     const scoreAttempts = document.body.querySelector('.score-attempt');
-    if (scoreAttempts) {
-        scoreAttempts.innerHTML = `${store.userAttempts}`;
-    }
-    if (score) {
-        score.innerHTML = `${store.userScore}`;
-
-    }
     if (!scoreAttempts || !score) {
         let scoringContainer = document.createElement('div');
         scoringContainer.classList.add('scoring-container');
@@ -45,6 +27,9 @@ function updateScoring() {
             <div>Attempts: <span class="score-attempt">${store.userAttempts}</span></div>
             `;
         document.body.appendChild(scoringContainer);
+    } else {
+        scoreAttempts.innerHTML = `${store.userAttempts}`;
+        score.innerHTML = `${store.userScore}`;
     }
 }
 
@@ -64,9 +49,9 @@ function removeCustomElement(name, container = document.body) {
 }
 
 function getRandomColor() {
-    var letters = '0123456789ABCDEF';
-    var color = '#';
-    for (var i = 0; i < 6; i++) {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
         color += letters[Math.floor(Math.random() * 16)];
     }
     return color;
@@ -89,166 +74,19 @@ function flipCards(time, excludeFlip = []) {
     } = store;
     let cards = document.querySelectorAll('.card');
     for (let card of cards) {
-
         gridToggled ? card.classList.remove('is-flipped') : card.classList.add('is-flipped');
     }
-    // updateStore({
-    //     key: 'gridToggled',
-    //     value: !gridToggled
-    // });
     store.gridToggled = !gridToggled;
 }
 
-function randomNumbers() {
-    const {
-        gridSize
-    } = store;
-    let nums = Array.from(Array(gridSize * gridSize).keys(), n => n + 1);
-    for (var i = nums.length - 1; i > 0; i--) {
+function randomNumbersInRange(start, end) {
+    let nums = Array.from(Array(end).keys(), n => n + 1);
+    for (let i = start; i < nums.length; i++) {
         // Generate random number
-        var j = Math.floor(Math.random() * (i + 1));
-
-        var temp = nums[i];
-        nums[i] = nums[j];
-        nums[j] = temp;
+        let j = Math.floor(Math.random() * (i));
+        [nums[i], nums[j]] = [nums[j], nums[i]];
     }
     return nums;
-}
-
-function createImageGrid() {
-    const {
-        gridSize
-    } = store;
-    let images = [];
-    for (let i = 0; i < gridSize * gridSize / 2; i++) {
-        images.push(fetch(PICSUM_URL));
-    }
-    Promise.all(images).then((response) => {
-        let blobs = []
-        response.forEach(result => {
-            blobs.push(result.blob())
-        });
-        Promise.all(blobs).then(result => {
-            let shuffledArray = randomNumbers(1, gridSize * gridSize);
-            let gridData = [];
-            shuffledArray.map(value => {
-                let val = {
-                    shuffledIndex: value,
-                    matchIndex: value % result.length,
-                    blob: result[value % result.length]
-                }
-                gridData.push(val);
-            })
-            console.log(gridData);
-            let gridDimensions = '';
-            for (let i = 0; i < gridSize; i++) {
-                gridDimensions += '150px ';
-            }
-            const imageContainer = document.createElement('div');
-            imageContainer.style.display = 'grid';
-            imageContainer.style.gridTemplateColumns = gridDimensions;
-            imageContainer.style.gridTemplateRows = gridDimensions;
-            imageContainer.className = 'image-container';
-
-            let selectionOne = 0,
-                selectionTwo = 0,
-                flipCount = 0;
-            let oldImageIndex = null;
-            let dontFlipList = [];
-            gridData.map(imageBlob => {
-                const cardContainer = document.createElement('div');
-                cardContainer.className = 'card';
-                cardContainer.dataset.matchIndex = imageBlob.matchIndex;
-                cardContainer.dataset.shuffledIndex = imageBlob.shuffledIndex;
-
-                setTimeout(() => {
-                    cardContainer.classList.toggle('is-flipped');
-                    cardContainer.onclick = (event) => {
-                        const {
-                            userScore,
-                            userAttempts
-                        } = store;
-                        if (cardContainer.classList.contains('is-flipped')) {
-                            let selectedMatchIndex = parseInt(event.currentTarget.getAttribute("data-match-index"));
-                            let selectedShuffledIndex = parseInt(event.currentTarget.getAttribute("data-shuffled-index"));
-                            if (!oldImageIndex) {
-                                oldImageIndex = selectedShuffledIndex;
-                            }
-                            if (flipCount < 2) {
-                                if (selectionOne) {
-                                    selectionTwo = selectedMatchIndex;
-                                } else {
-                                    selectionOne = selectedMatchIndex;
-                                }
-                                flipCount++;
-                                cardContainer.classList.toggle('is-flipped');
-                                if (selectionOne === selectionTwo && flipCount === 2) {
-                                    dontFlipList.push(selectedShuffledIndex);
-                                    dontFlipList.push(oldImageIndex);
-                                    flipCount = selectionTwo = selectionOne = 0;
-                                    oldImageIndex = null;
-                                    store.userScore = userScore + 1;
-                                    store.userAttempts = userAttempts + 1;
-                                    updateScoring();
-                                    // proxy.userScore = userScore + 1;
-                                    // proxy.userAttempts = userAttempts + 1;
-                                    // updateStore({
-                                    //     key: 'userScore',
-                                    //     value: userScore + 1
-                                    // });
-                                } else if (flipCount === 2) {
-                                    store.userAttempts = userAttempts + 1;
-                                    updateScoring();
-                                    setTimeout(() => {
-                                        toggleSelectedCards();
-                                    }, 1000);
-
-                                }
-                                // updateStore({
-                                //     key: 'userAttempts',
-                                //     value: userAttempts + 1
-                                // });
-                                // proxy.userAttempts = userAttempts + 1;
-                            } else {
-                                toggleSelectedCards();
-                            }
-                            if (dontFlipList.length === gridSize * gridSize) {
-                                loadCustomElement(TOAST, [{
-                                    key: 'message',
-                                    value: 'Congrats! You made it...'
-                                }])
-                            }
-
-                            function toggleSelectedCards() {
-                                selectionTwo = selectionOne = 0;
-                                oldImageIndex = null;
-                                flipCount = 0;
-                                let imageContainer = document.querySelectorAll('.card');
-                                for (let i = 0; i < imageContainer.length; i++) {
-                                    if (!dontFlipList.includes(parseInt(imageContainer[i].getAttribute("data-match-index")))) {
-                                        imageContainer[i].classList.add('is-flipped');
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }, 5000)
-                const backFlip = document.createElement('div');
-                backFlip.className = 'card__face card__face--back';
-
-                let imgObjectURL = URL.createObjectURL(imageBlob.blob);
-                let image = new Image();
-                image.src = imgObjectURL;
-                image.className = 'card__face card__face--front';
-
-                cardContainer.appendChild(image);
-                cardContainer.appendChild(backFlip);
-                imageContainer.appendChild(cardContainer);
-            })
-            document.body.appendChild(imageContainer);
-            removeCustomElement(MOSAIC_LOADER);
-        })
-    })
 }
 
 class ToastMessage extends HTMLElement {
@@ -265,8 +103,8 @@ class ToastMessage extends HTMLElement {
         const memoryGame = document.getElementsByTagName(MEMORY_GAME)[0];
         document.body.insertBefore(toast, memoryGame);
 
-        var end = Date.now() + (5 * 1000);
-        var colors = ['#fff', '#ff0000', '#f3f3f3', '#008000'];
+        const end = Date.now() + (5 * 1000);
+        const colors = ['#fff', '#ff0000', '#f3f3f3', '#008000'];
         (function frame() {
             confetti({
                 particleCount: 4,
@@ -366,8 +204,153 @@ class MemoryGame extends HTMLElement {
         super();
     };
     connectedCallback() {
-        createImageGrid();
+        this.createImageGrid();
         updateScoring();
+    }
+
+    async fetchImages(images) {
+        return Promise.all(images).then(async (response) => {
+            let blobs = []
+            response.forEach(result => {
+                blobs.push(result.blob())
+            });
+            let blobImages = await this.fetchImagesBlob(blobs);
+            return blobImages;
+        })
+    }
+
+    async fetchImagesBlob(blobs) {
+        return Promise.all(blobs).then(result => result)
+    }
+
+    async createImageGrid() {
+        const {
+            gridSize
+        } = store;
+
+        // Prepare images array for promise.all
+        let images = [];
+        for (let i = 0; i < gridSize * gridSize / 2; i++) {
+            images.push(fetch(PICSUM_URL));
+        }
+
+        // Fetch images with blobs
+        let imagesData = await this.fetchImages(images);
+
+        console.log(imagesData);
+
+        let shuffledArray = randomNumbersInRange(1, gridSize * gridSize);
+
+        let gridData = [];
+        shuffledArray.map(value => {
+            let val = {
+                shuffledIndex: value,
+                matchIndex: value % imagesData.length,
+                blob: imagesData[value % imagesData.length]
+            }
+            gridData.push(val);
+        })
+        console.log(gridData);
+
+        let gridDimensions = '';
+        for (let i = 0; i < gridSize; i++) {
+            gridDimensions += '150px ';
+        }
+
+        const imageContainer = document.createElement('div');
+        imageContainer.style.display = 'grid';
+        imageContainer.style.gridTemplateColumns = gridDimensions;
+        imageContainer.style.gridTemplateRows = gridDimensions;
+        imageContainer.className = 'image-container';
+
+        let selectionOne = 0,
+            selectionTwo = 0,
+            flipCount = 0,
+            oldImageIndex = null,
+            dontFlipList = [];
+
+        imageContainer.onclick = (event) => {
+            const parentCard = event.target.parentElement;
+            const {
+                userScore,
+                userAttempts
+            } = store;
+            if (parentCard.classList.contains('is-flipped')) {
+                let selectedMatchIndex = parseInt(event.target.getAttribute("data-match-index"));
+                let selectedShuffledIndex = parseInt(event.target.getAttribute("data-shuffled-index"));
+                if (!oldImageIndex) {
+                    oldImageIndex = selectedShuffledIndex;
+                }
+                if (flipCount < 2) {
+                    selectionOne ? selectionTwo = selectedMatchIndex : selectionOne = selectedMatchIndex;
+                    flipCount++;
+                    parentCard.classList.toggle('is-flipped');
+                    if (selectionOne === selectionTwo && flipCount === 2) {
+                        dontFlipList.push(selectedShuffledIndex);
+                        dontFlipList.push(oldImageIndex);
+                        flipCount = selectionTwo = selectionOne = 0;
+                        oldImageIndex = null;
+                        store.userScore = userScore + 1;
+                        store.userAttempts = userAttempts + 1;
+                        updateScoring();
+                    } else if (flipCount === 2) {
+                        store.userAttempts = userAttempts + 1;
+                        updateScoring();
+                        setTimeout(() => {
+                            toggleSelectedCards();
+                        }, 1000);
+
+                    }
+                } else {
+                    toggleSelectedCards();
+                }
+                if (dontFlipList.length === gridSize * gridSize) {
+                    loadCustomElement(TOAST, [{
+                        key: 'message',
+                        value: 'Congrats! You made it...'
+                    }])
+                }
+
+                function toggleSelectedCards() {
+                    selectionTwo = selectionOne = 0;
+                    oldImageIndex = null;
+                    flipCount = 0;
+                    let imageContainer = document.querySelectorAll('.card');
+                    for (let i = 0; i < imageContainer.length; i++) {
+                        if (!dontFlipList.includes(parseInt(imageContainer[i].getAttribute("data-shuffled-index")))) {
+                            imageContainer[i].classList.add('is-flipped');
+                        }
+                    }
+                }
+            }
+        }
+
+        gridData.map(imageBlob => {
+            const cardContainer = document.createElement('div');
+            cardContainer.className = 'card';
+            cardContainer.dataset.matchIndex = imageBlob.matchIndex;
+            cardContainer.dataset.shuffledIndex = imageBlob.shuffledIndex;
+
+            setTimeout(() => {
+                cardContainer.classList.toggle('is-flipped');
+            }, 5000)
+
+            const backFlip = document.createElement('div');
+            backFlip.className = 'card__face card__face--back';
+            backFlip.dataset.matchIndex = imageBlob.matchIndex;
+            backFlip.dataset.shuffledIndex = imageBlob.shuffledIndex;
+
+            let imgObjectURL = URL.createObjectURL(imageBlob.blob);
+            let image = new Image();
+            image.src = imgObjectURL;
+            image.className = 'card__face card__face--front';
+
+            cardContainer.appendChild(image);
+            cardContainer.appendChild(backFlip);
+            imageContainer.appendChild(cardContainer);
+        })
+        this.appendChild(imageContainer);
+        removeCustomElement(MOSAIC_LOADER);
     }
 }
 
@@ -391,20 +374,12 @@ class IntroPage extends HTMLElement {
         const gridSizeElement = document.querySelector('#grid-size');
 
         enterGame.onclick = function () {
-            // updateStore({
-            //     key: 'gridSize',
-            //     value: parseInt(gridSizeElement.value) % 2 === 0 ? parseInt(gridSizeElement.value) : parseInt(gridSizeElement.value) + 1
-            // });
             store.gridSize = parseInt(gridSizeElement.value) % 2 === 0 ? parseInt(gridSizeElement.value) : parseInt(gridSizeElement.value) + 1;
             removeCustomElement(INTRO_PAGE);
             loadCustomElement(MOSAIC_LOADER);
             loadCustomElement(MEMORY_GAME);
         }
     };
-
-    connectedCallback() {
-
-    }
 }
 
 
